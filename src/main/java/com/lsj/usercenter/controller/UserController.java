@@ -59,6 +59,13 @@ public class UserController {
     }
 
 
+    @PostMapping("/logout")
+    public BaseResponse<User> logout(HttpServletRequest request) {
+        request.getSession().setAttribute(USER_LOGIN_STATE, null);
+        return BaseResponse.success();
+    }
+
+
     @Autowired
     public void setUserService(UserService userService) {
         this.userService = userService;

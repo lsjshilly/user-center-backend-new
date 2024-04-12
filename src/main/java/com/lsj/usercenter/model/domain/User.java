@@ -67,5 +67,7 @@ public class User implements Serializable {
      */
     private Integer deleted = 0;
 
+    private String authorizator;
+
 
 }

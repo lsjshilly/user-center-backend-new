@@ -81,6 +81,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setState(originUser.getState());
         safeUser.setCreateTime(originUser.getCreateTime());
         safeUser.setUpdateTime(originUser.getUpdateTime());
+        safeUser.setAuthorizator(originUser.getAuthorizator());
         return safeUser;
     }
 
