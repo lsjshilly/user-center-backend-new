@@ -12,6 +12,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Objects;
 
+import static com.lsj.usercenter.common.ErrCode.ERR_UPLODA_AVATAR;
+
 
 @Component
 public class ImgtpUploadUtil {
@@ -54,7 +56,7 @@ public class ImgtpUploadUtil {
         try {
             value = objectMapper.writeValueAsString(picProperties);
         } catch (JsonProcessingException e) {
-            throw new BusinessExecption(110100, "serialization error", "serialization error");
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, e.getMessage());
         }
         Request request = new Request.Builder()
                 .post(RequestBody.create(value,
@@ -62,15 +64,16 @@ public class ImgtpUploadUtil {
                 .url(url)
                 .build();
         try (Response response = client.newCall(request).execute()) {
+            ImgtpResponse tokenResult = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgtpResponse.class);
             if (response.isSuccessful()) {
-                ImgtpResponse tokenResult = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgtpResponse.class);
                 this.token = tokenResult.getData().getToken();
+                return this.token;
             }
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, tokenResult.getMsg());
         } catch (IOException e) {
-            throw new BusinessExecption(110111, "read content from response body error", "");
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, e.getMessage());
         }
 
-        return this.token;
     }
 
 
@@ -93,9 +96,9 @@ public class ImgtpUploadUtil {
             if (response.isSuccessful()) {
                 return imgtpResponse.getData().getUrl();
             }
-            throw new BusinessExecption(110101, "upload file failed", imgtpResponse.getMsg());
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, imgtpResponse.getMsg());
         } catch (IOException e) {
-            throw new BusinessExecption(110101, "read content from response body error", "");
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, e.getMessage());
         }
     }
 
