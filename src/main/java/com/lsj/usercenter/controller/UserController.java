@@ -1,7 +1,9 @@
 package com.lsj.usercenter.controller;
 
 import com.lsj.usercenter.common.BaseResponse;
+import com.lsj.usercenter.model.domain.ResultList;
 import com.lsj.usercenter.model.domain.User;
+import com.lsj.usercenter.model.domain.UserCondition;
 import com.lsj.usercenter.model.request.LoginRequst;
 import com.lsj.usercenter.model.request.RegisterRequest;
 import com.lsj.usercenter.service.UserService;
@@ -63,6 +65,22 @@ public class UserController {
     public BaseResponse<User> logout(HttpServletRequest request) {
         request.getSession().setAttribute(USER_LOGIN_STATE, null);
         return BaseResponse.success();
+    }
+
+
+    @GetMapping("/search")
+    public BaseResponse<ResultList<User>> searchUsers(UserCondition condition) {
+        ResultList<User> users = userService.searchUsers(condition);
+        return BaseResponse.success(users);
+    }
+
+    @DeleteMapping("/{id}")
+    public BaseResponse<Integer> delete(@PathVariable("id") Integer id) {
+        boolean removed = userService.removeById(id);
+        if (removed) {
+            return BaseResponse.success(0);
+        }
+        return BaseResponse.success(-1);
     }
 
 

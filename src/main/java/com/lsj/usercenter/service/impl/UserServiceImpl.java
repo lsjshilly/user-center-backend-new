@@ -1,10 +1,13 @@
 package com.lsj.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.lsj.usercenter.execption.BusinessExecption;
 import com.lsj.usercenter.mapper.UserMapper;
+import com.lsj.usercenter.model.domain.ResultList;
 import com.lsj.usercenter.model.domain.User;
+import com.lsj.usercenter.model.domain.UserCondition;
 import com.lsj.usercenter.model.request.LoginRequst;
 import com.lsj.usercenter.model.request.RegisterRequest;
 import com.lsj.usercenter.service.UserService;
@@ -111,6 +114,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return getSafeUser(existUser);
 
 
+    }
+
+    @Override
+    public ResultList<User> searchUsers(UserCondition condition) {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(condition.getUsername())) {
+            queryWrapper.like("username", condition.getUsername());
+        }
+
+        if (StringUtils.isNotBlank(condition.getUserAccount())) {
+            queryWrapper.eq("use_account", condition.getUsername());
+        }
+
+        if (condition.getGender() != null) {
+            queryWrapper.eq("gender", condition.getGender());
+        }
+
+        if (condition.getStartTime() != null && condition.getEndTime() != null) {
+            queryWrapper.between("create_time", condition.getStartTime(), condition.getEndTime());
+        }
+
+        Page<User> page = new Page<>(condition.getCurrent(), condition.getPageSize());
+
+        Page<User> rowpage = this.page(page, queryWrapper);
+
+        ResultList<User> resultList = new ResultList<>();
+        resultList.setItems(rowpage.getRecords());
+        resultList.setTotal(rowpage.getTotal());
+
+
+        return resultList;
     }
 }
 

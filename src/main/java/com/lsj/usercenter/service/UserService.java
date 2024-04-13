@@ -1,7 +1,9 @@
 package com.lsj.usercenter.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.lsj.usercenter.model.domain.ResultList;
 import com.lsj.usercenter.model.domain.User;
+import com.lsj.usercenter.model.domain.UserCondition;
 import com.lsj.usercenter.model.request.LoginRequst;
 import com.lsj.usercenter.model.request.RegisterRequest;
 
@@ -17,4 +19,6 @@ public interface UserService extends IService<User> {
     User getSafeUser(User originUser);
 
     User login(LoginRequst loginRequst);
+
+    ResultList<User> searchUsers(UserCondition condition);
 }
