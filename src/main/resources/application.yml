@@ -2,15 +2,17 @@ spring:
   application:
     name: usercenter
   profiles:
-    active: dev
+    active: prod
+
 
 server:
   port: 12333
+  address: 0.0.0.0
+  servlet:
+    context-path: /user-center
 
 
 mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: deleted

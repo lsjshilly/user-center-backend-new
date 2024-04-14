@@ -11,6 +11,7 @@ import com.lsj.usercenter.model.domain.UserCondition;
 import com.lsj.usercenter.model.request.LoginRequst;
 import com.lsj.usercenter.model.request.RegisterRequest;
 import com.lsj.usercenter.service.UserService;
+import com.lsj.usercenter.utils.DesensitizeUtil;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -85,6 +86,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safeUser.setCreateTime(originUser.getCreateTime());
         safeUser.setUpdateTime(originUser.getUpdateTime());
         safeUser.setAuthorizator(originUser.getAuthorizator());
+        safeUser.setPhone(DesensitizeUtil.desensitizePhone(originUser.getPhone()));
+        safeUser.setEmail(DesensitizeUtil.desensitizeEmail(originUser.getEmail()));
         return safeUser;
     }
 

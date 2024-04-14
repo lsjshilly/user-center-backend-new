@@ -19,6 +19,8 @@ public enum ErrCode {
 
     ERR_NOT_LOGIN(100203, "not login"),
 
+    ERR_ACCESS_DENEY(100204, "access deney"),
+
     ERR_UPLODA_AVATAR(110101, "upload avatar error"),
 
     ERR_LOGIN_ERROR(110102, "login error");
