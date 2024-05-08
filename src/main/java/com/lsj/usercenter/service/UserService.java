@@ -1,24 +1,19 @@
 package com.lsj.usercenter.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.lsj.usercenter.model.domain.ResultList;
-import com.lsj.usercenter.model.domain.User;
-import com.lsj.usercenter.model.domain.UserCondition;
-import com.lsj.usercenter.model.request.LoginRequst;
-import com.lsj.usercenter.model.request.RegisterRequest;
+import com.lsj.usercenter.model.dto.LoginFromDTO;
+import com.lsj.usercenter.model.dto.RegisterFromDTO;
+import com.lsj.usercenter.model.dto.Result;
+import com.lsj.usercenter.model.entity.User;
 
 /**
  * @author liushijie
- * @description 针对表【user】的数据库操作Service
- * @createDate 2024-04-07 20:59:05
+ * @description 针对表【tb_user】的数据库操作Service
+ * @createDate 2024-05-07 23:21:15
  */
 public interface UserService extends IService<User> {
 
-    User register(RegisterRequest registerRequest);
+    Result doLogin(LoginFromDTO loginFromDTO);
 
-    User getSafeUser(User originUser);
-
-    User login(LoginRequst loginRequst);
-
-    ResultList<User> searchUsers(UserCondition condition);
+    Result register(RegisterFromDTO registerFromDTO);
 }

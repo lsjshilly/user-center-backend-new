@@ -1,153 +1,152 @@
 package com.lsj.usercenter.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.UUID;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.lsj.usercenter.execption.BusinessExecption;
 import com.lsj.usercenter.mapper.UserMapper;
-import com.lsj.usercenter.model.domain.ResultList;
-import com.lsj.usercenter.model.domain.User;
-import com.lsj.usercenter.model.domain.UserCondition;
-import com.lsj.usercenter.model.request.LoginRequst;
-import com.lsj.usercenter.model.request.RegisterRequest;
+import com.lsj.usercenter.model.common.ErrCode;
+import com.lsj.usercenter.model.dto.LoginFromDTO;
+import com.lsj.usercenter.model.dto.RegisterFromDTO;
+import com.lsj.usercenter.model.dto.Result;
+import com.lsj.usercenter.model.dto.UserDTO;
+import com.lsj.usercenter.model.entity.User;
+import com.lsj.usercenter.model.entity.UserInfo;
+import com.lsj.usercenter.service.UserInfoService;
 import com.lsj.usercenter.service.UserService;
-import com.lsj.usercenter.utils.DesensitizeUtil;
+import com.lsj.usercenter.utils.RegexUtils;
+import io.micrometer.common.util.StringUtils;
+import jakarta.annotation.Resource;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import static com.lsj.usercenter.common.ErrCode.*;
-import static com.lsj.usercenter.constant.UserConstant.SALT;
+import java.util.concurrent.TimeUnit;
+
+import static com.lsj.usercenter.model.constant.RedisConstants.*;
+import static com.lsj.usercenter.model.constant.UserConstant.*;
 
 /**
  * @author liushijie
- * @description 针对表【user】的数据库操作Service实现
- * @createDate 2024-04-07 20:59:05
+ * @description 针对表【tb_user】的数据库操作Service实现
+ * @createDate 2024-05-07 23:21:15
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
 
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Resource
+    private UserInfoService userInfoService;
+
     @Override
-    public User register(RegisterRequest registerUser) {
+    public Result doLogin(LoginFromDTO loginFromDTO) {
 
-        if (StringUtils.isAnyEmpty(registerUser.getUserAccount(), registerUser.getUserPassword(), registerUser.getConfirmPassword())) {
-            throw new BusinessExecption(ERR_VALIDATION, "request params should not empty");
+        if (ACCOUNT_LOGIN_TYPE.equals(loginFromDTO.getLoginType())) {
+            return accountLogin(loginFromDTO);
+        } else if (PHONE_LOGIN_TYPE.equals(loginFromDTO.getLoginType())) {
+            return phoneLogin(loginFromDTO);
+        } else {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "登录类型错误");
         }
 
-        if (registerUser.getUserAccount().length() < 4) {
-            throw new BusinessExecption(ERR_VALIDATION, "useaccount too short");
+    }
+
+    @Override
+    @Transactional
+    public Result register(RegisterFromDTO registerFromDTO) {
+        if (RegexUtils.invalidUsername(registerFromDTO.getUsername())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "用户名不合法，仅支持中英文、数字、下划线、中划线、@及.，4-32长度");
+        }
+        if (RegexUtils.invalidPassword(registerFromDTO.getPassword())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "密码不合法，仅中应为、数字、下划线、中划线及特殊符号@.#$%&*!，8-32长度");
         }
 
-        if (registerUser.getUserPassword().length() < 8) {
-            throw new BusinessExecption(ERR_VALIDATION, "usepassword too short");
-        }
-
-        if (!registerUser.getUserPassword().equals(registerUser.getConfirmPassword())) {
-            throw new BusinessExecption(ERR_VALIDATION, "inconsistent password");
-        }
-
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_account", registerUser.getUserAccount());
-        User existUser = this.getOne(queryWrapper);
+        User existUser = query().eq("username", registerFromDTO.getUsername()).one();
         if (existUser != null) {
-            throw new BusinessExecption(ERR_VALIDATION, "duplicate useraccount");
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "用户名已存在");
         }
 
-        String encryptPassword = DigestUtils.md5Hex(SALT + registerUser.getUserPassword());
+        String encryptPassword = DigestUtils.md5Hex(SALT + registerFromDTO.getPassword());
 
         User user = new User();
-        user.setUsername(registerUser.getUsername());
-        user.setUserAccount(registerUser.getUserAccount());
-        user.setUserPassword(encryptPassword);
-        user.setAvatar(registerUser.getAvatar());
-        user.setPhone(registerUser.getPhone());
-        user.setEmail(registerUser.getEmail());
-        user.setGender(registerUser.getGender());
-        user.setState(0);
-        user.setDeleted(0);
-        boolean saved = this.save(user);
-        if (!saved) {
-            throw new BusinessExecption(ERR_DATABASE, "save usere to db error");
-        }
-        return getSafeUser(user);
+        user.setUsername(registerFromDTO.getUsername());
+        user.setPassword(encryptPassword);
+        save(user);
+        UserInfo userInfo = new UserInfo();
+        userInfo.setUserId(user.getId());
+        userInfo.setUsername(user.getUsername());
+        userInfo.setNickname("user_" + RandomUtil.randomString(10));
+        userInfoService.save(userInfo);
+        return Result.success();
+
     }
 
-    @Override
-    public User getSafeUser(User originUser) {
-        User safeUser = new User();
-        safeUser.setId(originUser.getId());
-        safeUser.setUsername(originUser.getUsername());
-        safeUser.setUserAccount(originUser.getUserAccount());
-        safeUser.setAvatar(originUser.getAvatar());
-        safeUser.setGender(originUser.getGender());
-        safeUser.setState(originUser.getState());
-        safeUser.setCreateTime(originUser.getCreateTime());
-        safeUser.setUpdateTime(originUser.getUpdateTime());
-        safeUser.setAuthorizator(originUser.getAuthorizator());
-        safeUser.setPhone(DesensitizeUtil.desensitizePhone(originUser.getPhone()));
-        safeUser.setEmail(DesensitizeUtil.desensitizeEmail(originUser.getEmail()));
-        return safeUser;
-    }
-
-    @Override
-    public User login(LoginRequst loginRequst) {
-        if (StringUtils.isAnyEmpty(loginRequst.getUserAccount(), loginRequst.getUserPassword())) {
-            throw new BusinessExecption(ERR_LOGIN_ERROR, "request params should not empty");
+    private Result phoneLogin(LoginFromDTO loginFromDTO) {
+        if (RegexUtils.invalidphone(loginFromDTO.getPhone())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "无效的手机号");
         }
 
-        if (loginRequst.getUserAccount().length() < 4) {
-            throw new BusinessExecption(ERR_LOGIN_ERROR, "useaccount too short");
-        }
+        User existUser = query().eq("phone", loginFromDTO.getPhone()).one();
 
-        if (loginRequst.getUserPassword().length() < 8) {
-            throw new BusinessExecption(ERR_LOGIN_ERROR, "usepassword too short");
-        }
-
-        String encryptPassword = DigestUtils.md5Hex(SALT + loginRequst.getUserPassword());
-
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("user_account", loginRequst.getUserAccount());
-        queryWrapper.eq("user_password", encryptPassword);
-        User existUser = this.getOne(queryWrapper);
         if (existUser == null) {
-            throw new BusinessExecption(ERR_LOGIN_ERROR, "useraccount or password error");
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "手机号未注册");
         }
-        return getSafeUser(existUser);
 
+
+        String code = stringRedisTemplate.opsForValue().get(LOGIN_USER_CODE_PREFIX + loginFromDTO.getPhone());
+
+        if (StringUtils.isBlank(code) || !code.equals(loginFromDTO.getCode())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "验证码错误");
+        }
+
+
+        String token = UUID.randomUUID().toString(true);
+
+        saveInRedis(existUser, token);
+
+        return Result.success(token);
 
     }
 
-    @Override
-    public ResultList<User> searchUsers(UserCondition condition) {
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        if (StringUtils.isNotBlank(condition.getUsername())) {
-            queryWrapper.like("username", condition.getUsername());
+    private void saveInRedis(User existUser, String token) {
+        UserDTO userDTO = BeanUtil.toBean(existUser, UserDTO.class);
+
+        stringRedisTemplate.opsForValue().set(LOGIN_USER_TOKEN_PREFIX + token,
+                JSONUtil.toJsonStr(userDTO)
+        );
+        stringRedisTemplate.expire(LOGIN_USER_TOKEN_PREFIX + token, LOGIN_USER_TOKEN_TTL, TimeUnit.MINUTES);
+    }
+
+    private Result accountLogin(LoginFromDTO loginFromDTO) {
+        if (RegexUtils.invalidUsername(loginFromDTO.getUsername())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "无效的用户名");
+        }
+        if (RegexUtils.invalidPassword(loginFromDTO.getPassword())) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "无效的密码");
         }
 
-        if (StringUtils.isNotBlank(condition.getUserAccount())) {
-            queryWrapper.eq("use_account", condition.getUsername());
+
+        String encryptPassword = DigestUtils.md5Hex(SALT + loginFromDTO.getPassword());
+
+        User existUser = query().eq("username", loginFromDTO.getUsername())
+                .eq("password", encryptPassword)
+                .one();
+
+        if (existUser == null) {
+            return Result.error(ErrCode.ERR_LOGIN_ERROR, "用户名或密码错误");
         }
 
-        if (condition.getGender() != null) {
-            queryWrapper.eq("gender", condition.getGender());
-        }
+        String token = UUID.randomUUID().toString(true);
 
-        if (condition.getStartTime() != null && condition.getEndTime() != null) {
-            queryWrapper.between("create_time", condition.getStartTime(), condition.getEndTime());
-        }
+        saveInRedis(existUser, token);
 
-        Page<User> page = new Page<>(condition.getCurrent(), condition.getPageSize());
-
-        Page<User> rowpage = this.page(page, queryWrapper);
-
-        ResultList<User> resultList = new ResultList<>();
-        resultList.setItems(rowpage.getRecords());
-        resultList.setTotal(rowpage.getTotal());
-
-
-        return resultList;
+        return Result.success(token);
     }
 }
 

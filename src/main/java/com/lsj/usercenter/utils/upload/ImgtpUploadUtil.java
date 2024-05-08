@@ -2,8 +2,8 @@ package com.lsj.usercenter.utils.upload;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lsj.usercenter.execption.BusinessExecption;
-import com.lsj.usercenter.model.domain.ImgtpResponse;
+import com.lsj.usercenter.model.dto.ImgTPResult;
+import com.lsj.usercenter.model.execption.BusinessExecption;
 import okhttp3.*;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Objects;
 
-import static com.lsj.usercenter.common.ErrCode.ERR_UPLODA_AVATAR;
+import static com.lsj.usercenter.model.common.ErrCode.ERR_UPLODA_AVATAR;
 
 
 @Component
@@ -64,14 +64,14 @@ public class ImgtpUploadUtil {
                 .url(url)
                 .build();
         try (Response response = client.newCall(request).execute()) {
-            ImgtpResponse tokenResult = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgtpResponse.class);
+            ImgTPResult tokenResult = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgTPResult.class);
             if (response.isSuccessful()) {
                 this.token = tokenResult.getData().getToken();
                 return this.token;
             }
-            throw new BusinessExecption(ERR_UPLODA_AVATAR, tokenResult.getMsg());
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, "头像上传失败" + tokenResult.getMsg());
         } catch (IOException e) {
-            throw new BusinessExecption(ERR_UPLODA_AVATAR, e.getMessage());
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, "头像上传失败" + e.getMessage());
         }
 
     }
@@ -92,13 +92,13 @@ public class ImgtpUploadUtil {
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
-            ImgtpResponse imgtpResponse = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgtpResponse.class);
+            ImgTPResult imgtpResponse = objectMapper.readValue(Objects.requireNonNull(response.body()).bytes(), ImgTPResult.class);
             if (response.isSuccessful()) {
                 return imgtpResponse.getData().getUrl();
             }
-            throw new BusinessExecption(ERR_UPLODA_AVATAR, imgtpResponse.getMsg());
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, "头像上传失败" + imgtpResponse.getMsg());
         } catch (IOException e) {
-            throw new BusinessExecption(ERR_UPLODA_AVATAR, e.getMessage());
+            throw new BusinessExecption(ERR_UPLODA_AVATAR, "头像上传失败" + e.getMessage());
         }
     }
 
