@@ -27,11 +27,11 @@ public class UserInfoServiceImpl extends ServiceImpl<UserInfoMapper, UserInfo>
     @Override
     public Result getUserInfos(UserQuery userQuery) {
 
-        if (userQuery.getPageSize() > MAX_PAGESIZE) {
+        if (userQuery.getPageSize() != null && userQuery.getPageSize() > MAX_PAGESIZE) {
             userQuery.setPageSize(MAX_PAGESIZE);
         }
 
-        if (userQuery.getPageSize() <= 0) {
+        if (userQuery.getPageSize() == null || userQuery.getPageSize() <= 0) {
             userQuery.setPageSize(DEFAULT_PAGESIZE);
         }
 

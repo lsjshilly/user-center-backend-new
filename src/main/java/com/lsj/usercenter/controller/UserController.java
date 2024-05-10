@@ -52,7 +52,7 @@ public class UserController {
         if (userDTO == null) {
             return Result.error(ErrCode.ERR_NOT_LOGIN, "未登录");
         }
-        UserInfo userInfo = userInfoService.getById(userDTO.getId());
+        UserInfo userInfo = userInfoService.query().eq("user_id", userDTO.getId()).one();
         return Result.success(userInfo);
     }
 

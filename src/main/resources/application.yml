@@ -9,8 +9,8 @@ mybatis-plus:
   global-config:
     db-config:
       logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
+      logic-delete-value: 0
+      logic-not-delete-value: 1
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   type-aliases-package: com.lsj.usercenter.model.entity

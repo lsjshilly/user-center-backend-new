@@ -1,6 +1,7 @@
 package com.lsj.usercenter.utils;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.json.JSONUtil;
 import com.lsj.usercenter.model.dto.UserDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -39,7 +40,7 @@ public class RefreshTokenInceptor implements HandlerInterceptor {
             return true;
         }
 
-        UserDTO userDTO = BeanUtil.toBean(userDtoStr, UserDTO.class);
+        UserDTO userDTO = JSONUtil.toBean(userDtoStr, UserDTO.class);
 
         if (userDTO == null) {
             log.error("token is invalid:{}", token);

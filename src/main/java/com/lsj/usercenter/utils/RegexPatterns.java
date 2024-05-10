@@ -22,6 +22,6 @@ public class RegexPatterns {
     /**
      * 密码正侧 8-32位 支持中应为、数字、下划线、中划线及特殊符号@.#$%&*!
      */
-    public static final String PASSWORD_REGEX = "^[\\u4e00-\\u9fa5a-zA-Z0-9_-@.#$%&*!]{8,32}$";
+    public static final String PASSWORD_REGEX = "^[\\u4e00-\\u9fa5a-zA-Z0-9_@.#$%&*!-]{8,32}$";
 
 }
